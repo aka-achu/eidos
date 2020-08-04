@@ -22,11 +22,26 @@ func New(filename string, options *Options) *Logger {
 	if options.Period == time.Duration(0) {
 		options.Period = defaultMaxPeriod
 	}
-
-	return &Logger{
+	l := &Logger{
 		Filename:      filename,
 		RollingOption: options,
 	}
+
+	l.ticker = time.NewTicker(options.Period)
+	l.tick = make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-l.tick:
+				return
+			case _ = <-l.ticker.C:
+				l.Rotate()
+			}
+		}
+	}()
+
+	return l
 }
 
 func (l *Logger) Write(p []byte) (n int, err error) {

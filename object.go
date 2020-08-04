@@ -19,6 +19,8 @@ type Logger struct {
 
 	size  int64
 	file  *os.File
+	ticker *time.Ticker
+	tick chan bool
 	mutex sync.Mutex
 }
 
