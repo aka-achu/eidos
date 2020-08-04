@@ -1,4 +1,4 @@
-package main
+package eidos
 
 import (
 	"os"
@@ -64,4 +64,9 @@ type Options struct {
 	// CleanUpCallback will hold an internal cleanup function definition which will
 	// clean old log file and some other post rolling operations
 	CleanUpCallback func()
+
+	// LocalTime determines if the time used for formatting the timestamps in
+	// backup files is the computer's local time.  The default is to use UTC
+	// time.
+	LocalTime bool `json:"localtime" yaml:"localtime"`
 }
