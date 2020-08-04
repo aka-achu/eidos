@@ -1,4 +1,4 @@
-package eidos
+package main
 
 import (
 	"os"
@@ -16,18 +16,6 @@ type Logger struct {
 
 	// RollingOption specifies set of parameters for the rolling operation.
 	RollingOption *Options `json:"rolling_option"`
-
-	// RolledFile is a channel of string which will be used to send the
-	// path of the rolled file. If the compression is enabled in the options,
-	// the CompressedFile channel will be used to send path of rolled
-	// compressed log file.
-	RolledFile <-chan string `json:"rolled_file"`
-
-	// CompressedFile is a channel of string which will be used to send the
-	// path of the rolled compressed log file. If the compression id disabled
-	// in the options,  RolledFile channel will be used to send the path of
-	// rolled file.
-	CompressedFile <-chan string `json:"compressed_file"`
 
 	size  int64
 	file  *os.File
