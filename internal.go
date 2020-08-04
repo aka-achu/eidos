@@ -1,4 +1,4 @@
-package eidos
+package main
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var defaultMaxSize = 100
+var defaultMaxSize = 10
 var megabyte = 1024 * 1024
 var backupTimeFormat = "2006-01-02T15-04-05.000"
 
@@ -49,13 +49,15 @@ func (l *Logger) openNewFile() error {
 	fileMode := os.FileMode(0666)
 	fileInfo, err := os.Stat(fileName)
 	if err == nil {
+		backupFileName := backupName(fileName, l.RollingOption.LocalTime)
 		fileMode = fileInfo.Mode()
-		if err := os.Rename(fileName, backupName(fileName, l.RollingOption.LocalTime)); err != nil {
+		if err := os.Rename(fileName, backupFileName ); err != nil {
 			return fmt.Errorf("can't rename log file: %s", err)
 		}
 		if err := chown(fileName, fileInfo); err != nil {
 			return err
 		}
+		go l.RollingOption.Callback(backupFileName)
 	}
 	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
 	if err != nil {
@@ -77,10 +79,31 @@ func backupName(name string, localTime bool) string {
 	}
 	return filepath.Join(
 		dir,
-		fmt.Sprintf("%s-%s%s", filename[:len(filename)-len(ext)], t.UTC().Format(backupTimeFormat), ext),
+		fmt.Sprintf("%s-%s%s", filename[:len(filename)-len(ext)], t.Format(backupTimeFormat), ext),
 	)
 }
 
 func chown(_ string, _ os.FileInfo) error {
 	return nil
+}
+
+func (l *Logger) rotate() error {
+	if err := l.close(); err != nil  {
+		return err
+	}
+	if err := l.openNewFile(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (l *Logger) close() error {
+	if l.file == nil {
+		return nil
+	}
+	// Closing the opened file
+	// Assigning nil to file pointer
+	err := l.file.Close()
+	l.file = nil
+	return err
 }

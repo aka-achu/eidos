@@ -1,4 +1,4 @@
-package eidos
+package main
 
 import (
 	"fmt"
@@ -23,7 +23,15 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 			)
 	}
 	if l.file == nil {
-		// create a new file or open an existing one
+		if err := l.openExistingOrNewFile(); err != nil {
+			return 0,err
+		}
+	}
+
+	if l.size+writeRequestLength > l.max() {
+		if err := l.rotate(); err != nil {
+			return 0, err
+		}
 	}
 
 	n, err = l.file.Write(p)
@@ -36,25 +44,11 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 func (l *Logger) Close() error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	// If not file is opened, return nil
-	if l.file == nil {
-		return nil
-	}
-	// Closing the opened file
-	// Assigning nil to file pointer
-	err := l.file.Close()
-	l.file = nil
-	return err
+	return l.close()
 }
 
 func (l *Logger) Rotate() error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	if err := l.Close(); err != nil {
-		return err
-	}
-	if err := l.openNewFile(); err != nil {
-		return err
-	}
-	return nil
+	return l.rotate()
 }
