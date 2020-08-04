@@ -8,13 +8,11 @@ import (
 )
 
 var defaultMaxSize = 10
+var defaultMaxPeriod = 7 * 24 * time.Hour
 var megabyte = 1024 * 1024
 var backupTimeFormat = "2006-01-02T15-04-05.000"
 
 func (l *Logger) max() int64 {
-	if l.RollingOption.Size == 0 {
-		return int64(defaultMaxSize * megabyte)
-	}
 	return int64(l.RollingOption.Size) * int64(megabyte)
 }
 
