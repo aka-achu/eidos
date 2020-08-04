@@ -3,10 +3,31 @@ package main
 import (
 	"fmt"
 	"io"
+	"time"
 )
 
 // Implements io.WriteCloser
 var _ io.WriteCloser = (*Logger)(nil)
+
+
+func New(filename string, options *Options) *Logger {
+	if options.Callback == nil {
+		options.Callback = func(s string) {}
+	}
+
+	if options.Size == 0 {
+		options.Size = defaultMaxSize
+	}
+
+	if options.Period == time.Duration(0) {
+		options.Period = defaultMaxPeriod
+	}
+
+	return &Logger{
+		Filename:      filename,
+		RollingOption: options,
+	}
+}
 
 func (l *Logger) Write(p []byte) (n int, err error) {
 	l.mutex.Lock()
