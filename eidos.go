@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -10,7 +12,7 @@ import (
 var _ io.WriteCloser = (*Logger)(nil)
 
 
-func New(filename string, options *Options) *Logger {
+func New(filename string, options *Options) (*Logger, error) {
 	if options.Callback == nil {
 		options.Callback = func(s string) {}
 	}
@@ -27,6 +29,10 @@ func New(filename string, options *Options) *Logger {
 		RotationOption: options,
 	}
 
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		return nil, err
+	}
+
 	l.ticker = time.NewTicker(options.Period)
 	l.tick = make(chan bool)
 
@@ -41,7 +47,7 @@ func New(filename string, options *Options) *Logger {
 		}
 	}()
 
-	return l
+	return l, nil
 }
 
 func (l *Logger) Write(p []byte) (n int, err error) {
