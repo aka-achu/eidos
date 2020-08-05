@@ -55,7 +55,7 @@ func (l *Logger) openNewFile() error {
 		if err := chown(fileName, fileInfo); err != nil {
 			return err
 		}
-		go l.RotationOption.Callback(backupFileName)
+		go l.RotationOption.postRotationOperation(backupFileName)
 	}
 	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
 	if err != nil {
@@ -104,4 +104,8 @@ func (l *Logger) close() error {
 	err := l.file.Close()
 	l.file = nil
 	return err
+}
+
+func (l *Logger) postRotation(s string) {
+	callbackExecutor <- s
 }
