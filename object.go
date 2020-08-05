@@ -14,8 +14,8 @@ type Logger struct {
 	// stored in the os.TempDir().
 	Filename string `json:"filename"`
 
-	// RollingOption specifies set of parameters for the rolling operation.
-	RollingOption *Options `json:"rolling_option"`
+	// RotationOption specifies set of parameters for the rotating operation.
+	RotationOption *Options `json:"rotation_option"`
 
 	size  int64
 	file  *os.File
@@ -27,10 +27,10 @@ type Logger struct {
 type Options struct {
 
 	// Size is the maximum size in megabytes of the log file before it gets
-	// rolled. The default Size is 100 megabyte
+	// rotated. The default Size is 100 megabyte
 	Size int `json:"size"`
 
-	// Period is the maximum age of the log file before it gets rolled.
+	// Period is the maximum age of the log file before it gets rotated.
 	// The default Period of the log file is 7 days
 	Period time.Duration `json:"period"`
 
@@ -41,18 +41,18 @@ type Options struct {
 	// based on age.
 	RetentionPeriod int `json:"retention_period"`
 
-	// Compress determines if the rolled log files should be compressed. The default
+	// Compress determines if the rotated log files should be compressed. The default
 	// value of Compress in false
 	Compress bool `json:"compress"`
 
 	// Callback will hold a func(string) definition which will be called when the
-	// log file is being rolled and the argument to the function will be the
-	// rolled/compressed file name. The user can implement some additional functionalities
-	// example - upload the rolled file to s3
+	// log file is being rotated and the argument to the function will be the
+	// rotated/compressed file name. The user can implement some additional functionalities
+	// example - upload the rotated file to s3
 	Callback func(string)
 
 	// CleanUpCallback will hold an internal cleanup function definition which will
-	// clean old log file and some other post rolling operations
+	// clean old log file and some other post rotating operations
 	CleanUpCallback func()
 
 	// LocalTime determines if the time used for formatting the timestamps in

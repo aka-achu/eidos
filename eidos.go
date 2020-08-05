@@ -23,8 +23,8 @@ func New(filename string, options *Options) *Logger {
 		options.Period = defaultMaxPeriod
 	}
 	l := &Logger{
-		Filename:      filename,
-		RollingOption: options,
+		Filename:       filename,
+		RotationOption: options,
 	}
 
 	l.ticker = time.NewTicker(options.Period)

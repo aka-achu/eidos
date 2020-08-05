@@ -13,7 +13,7 @@ var megabyte = 1024 * 1024
 var backupTimeFormat = "2006-01-02T15-04-05.000"
 
 func (l *Logger) max() int64 {
-	return int64(l.RollingOption.Size) * int64(megabyte)
+	return int64(l.RotationOption.Size) * int64(megabyte)
 }
 
 func (l *Logger) getFilename() string {
@@ -47,7 +47,7 @@ func (l *Logger) openNewFile() error {
 	fileMode := os.FileMode(0666)
 	fileInfo, err := os.Stat(fileName)
 	if err == nil {
-		backupFileName := backupName(fileName, l.RollingOption.LocalTime)
+		backupFileName := backupName(fileName, l.RotationOption.LocalTime)
 		fileMode = fileInfo.Mode()
 		if err := os.Rename(fileName, backupFileName ); err != nil {
 			return fmt.Errorf("can't rename log file: %s", err)
@@ -55,7 +55,7 @@ func (l *Logger) openNewFile() error {
 		if err := chown(fileName, fileInfo); err != nil {
 			return err
 		}
-		go l.RollingOption.Callback(backupFileName)
+		go l.RotationOption.Callback(backupFileName)
 	}
 	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
 	if err != nil {
