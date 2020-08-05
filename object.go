@@ -45,18 +45,20 @@ type Options struct {
 	// value of Compress in false
 	Compress bool `json:"compress"`
 
-	// Callback will hold a func(string) definition which will be called when the
-	// log file is being rotated and the argument to the function will be the
-	// rotated/compressed file name. The user can implement some additional functionalities
-	// example - upload the rotated file to s3
-	Callback func(string)
-
 	// CleanUpCallback will hold an internal cleanup function definition which will
 	// clean old log file and some other post rotating operations
-	CleanUpCallback func()
+	postRotationOperation func(string)
 
 	// LocalTime determines if the time used for formatting the timestamps in
 	// backup files is the computer's local time.  The default is to use UTC
 	// time.
 	LocalTime bool `json:"localtime" yaml:"localtime"`
+}
+
+type Callback struct {
+	// Execute will hold a func(string) definition which will be called when the
+	// log file is being rotated and the argument to the function will be the
+	// rotated/compressed file name. The user can implement some additional functionalities
+	// example - upload the rotated file to s3
+	Execute func(string)
 }
