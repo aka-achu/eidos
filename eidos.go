@@ -10,11 +10,12 @@ import (
 
 // Implements io.WriteCloser
 var _ io.WriteCloser = (*Logger)(nil)
+var callbackExecutor chan string
 
 
-func New(filename string, options *Options) (*Logger, error) {
-	if options.Callback == nil {
-		options.Callback = func(s string) {}
+func New(filename string, options *Options, callback *Callback) (*Logger, error) {
+	if callback.Execute == nil {
+		callback.Execute = func(s string) {}
 	}
 
 	if options.Size == 0 {
@@ -28,6 +29,8 @@ func New(filename string, options *Options) (*Logger, error) {
 		Filename:       filename,
 		RotationOption: options,
 	}
+	options.postRotationOperation = l.postRotation
+	callbackExecutor = make(chan string)
 
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 		return nil, err
@@ -44,6 +47,12 @@ func New(filename string, options *Options) (*Logger, error) {
 			case _ = <-l.ticker.C:
 				l.Rotate()
 			}
+		}
+	}()
+
+	go func(){
+		for {
+			callback.Execute(<-callbackExecutor)
 		}
 	}()
 
