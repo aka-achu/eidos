@@ -10,7 +10,7 @@ import "github.com/aka-achu/eidos"
 Eidos is intended to be one part of a logging infrastructure. It is not an all-in-one solution, but instead is a pluggable component at the bottom of the logging stack that simply controls the files to which logs are written. It plays well with any logging package that can write to an io.Writer, including the standard library's log package. 
 
 ##### Assumption
-Eidos assumes that only one process is writing to the output files. Using the same lumberjack configuration from multiple processes on the same machine will result in improper behavior.
+Eidos assumes that only one process is writing to the output files. Using the same eidos configuration from multiple processes on the same machine will result in improper behavior.
 
 ##### Features
   - Filesize based log rotation
