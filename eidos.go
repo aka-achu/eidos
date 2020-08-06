@@ -10,6 +10,7 @@ import (
 
 // Implements io.WriteCloser
 var _ io.WriteCloser = (*Logger)(nil)
+
 // callbackExecutor acts as a communication pipeline in between the main thread and the callback daemon thread
 var callbackExecutor chan string
 
@@ -33,6 +34,12 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 		options.Period = defaultMaxPeriod
 	}
 
+	// If the filename is empty, then the log files will be
+	// stored in the inside a folder named "eidos_logs" which is in the os.Temp() directory
+	if filename == "" {
+		filename = filepath.Join(os.TempDir(), "eidos_logs", filepath.Base(os.Args[0])+"-eidos.log")
+	}
+
 	// Initializing a Logger object
 	l := &Logger{
 		Filename:       filename,
@@ -50,18 +57,15 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 		}
 	}
 
-	// Initializing a ticker of interval options.Period
-	l.ticker = time.NewTicker(options.Period)
-	//l.tick = make(chan bool)
+	// Initializing a rotationTicker of interval options.Period
+	l.rotationTicker = time.NewTicker(options.Period)
 
 	// Running daemon go-routine for period based
 	// rotation of log files
 	go func() {
 		for {
 			select {
-			//case <-l.tick:
-			//	return
-			case _ = <-l.ticker.C:
+			case _ = <-l.rotationTicker.C:
 				l.Rotate()
 			}
 		}
@@ -71,11 +75,18 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 	// callback.Execute waits to receive data from callbackExecutor
 	// channel which is used to send rotated filename / compressed
 	// filename from the postRotation thread to daemon thread.
-	go func(){
+	go func() {
 		for {
 			callback.Execute(<-callbackExecutor)
 		}
 	}()
+
+	if l.RotationOption.RetentionPeriod > 0 {
+		l.retentionTicker = time.NewTicker(time.Duration(l.RotationOption.RetentionPeriod) * 24 * time.Hour)
+		go func() {
+			cleanUpOldLogs(filename, options.Compress, options.RetentionPeriod)
+		}()
+	}
 
 	return l, nil
 }
@@ -98,7 +109,7 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	// If the file pointer in the Logger object is nil then open a new/existing log file
 	if l.file == nil {
 		if err := l.openExistingOrNewFile(); err != nil {
-			return 0,err
+			return 0, err
 		}
 	}
 
@@ -116,7 +127,7 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	// Increase the file size by request content length
 	l.size += int64(n)
 
-	return n,err
+	return n, err
 }
 
 // Close implements io.Closer
