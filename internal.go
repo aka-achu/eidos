@@ -114,7 +114,7 @@ func (l *Logger) close() error {
 func postRotation(backupFileName string, compress bool) {
 	time.Sleep(time.Second * 2)
 	if compress {
-		compressedFileName := backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))] + ".gzip"
+		compressedFileName := backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))] + ".gz"
 		fmt.Printf("Compression error-%v",compressLogFile(backupFileName, compressedFileName))
 		callbackExecutor <- compressedFileName
 	} else {
@@ -127,37 +127,51 @@ func compressLogFile(sourceFile, destinationFile string) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
 	}
+	defer file.Close()
+
 	fileInfo, err := os.Stat(sourceFile)
 	if err != nil {
 		return fmt.Errorf("failed to stat log file: %v", err)
 	}
-	if err := chown(destinationFile, fileInfo); err != nil {
+
+	err = chown(destinationFile, fileInfo)
+	if err != nil {
 		return fmt.Errorf("failed to chown compressed log file: %v", err)
 	}
+
 	compressedFile, err := os.OpenFile(destinationFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fileInfo.Mode())
 	if err != nil {
 		return fmt.Errorf("failed to open compressed log file: %v", err)
 	}
 	defer compressedFile.Close()
+
 	gzWriter, err := gzip.NewWriterLevel(compressedFile, gzip.BestSpeed)
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		if err != nil {
 			os.Remove(destinationFile)
 			err = fmt.Errorf("failed to compress log file: %v", err)
 		}
 	}()
+
 	if _, err := io.Copy(gzWriter, file); err != nil {
 		return err
 	}
+
 	if err := gzWriter.Close(); err != nil {
 		return err
 	}
-	file.Close()
+
+	if err :=file.Close(); err != nil {
+		return err
+	}
+
 	if err := os.Remove(sourceFile); err != nil {
 		return err
 	}
+
 	return nil
 }
