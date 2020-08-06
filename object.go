@@ -17,11 +17,11 @@ type Logger struct {
 	// RotationOption specifies set of parameters for the rotating operation.
 	RotationOption *Options `json:"rotation_option"`
 
-	size  int64
-	file  *os.File
-	ticker *time.Ticker
-	//tick chan bool
-	mutex sync.Mutex
+	size            int64
+	file            *os.File
+	rotationTicker  *time.Ticker
+	retentionTicker *time.Ticker
+	mutex           sync.Mutex
 }
 
 type Options struct {
