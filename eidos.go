@@ -52,15 +52,15 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 
 	// Initializing a ticker of interval options.Period
 	l.ticker = time.NewTicker(options.Period)
-	l.tick = make(chan bool)
+	//l.tick = make(chan bool)
 
 	// Running daemon go-routine for period based
 	// rotation of log files
 	go func() {
 		for {
 			select {
-			case <-l.tick:
-				return
+			//case <-l.tick:
+			//	return
 			case _ = <-l.ticker.C:
 				l.Rotate()
 			}
