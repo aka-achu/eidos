@@ -11,7 +11,7 @@ import (
 
 var (
 	// defaultMaxSize represents the default maximum size of the log file, which is 10 mb
-	defaultMaxSize = 10
+	defaultMaxSize = 100
 	// defaultMaxPeriod represents the maximum period of a log file to be active, which is 7 days
 	defaultMaxPeriod = 7 * 24 * time.Hour
 	megabyte = 1024 * 1024
@@ -158,7 +158,7 @@ func postRotation(backupFileName string, compress bool) {
 	// If compression is enabled
 	if compress {
 		// Get a compressed file name
-		compressedFileName := backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))] + ".gz"
+		compressedFileName := backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))] + ".log.gz"
 		// Compress the log file
 		if err := compressLogFile(backupFileName, compressedFileName); err != nil {
 			// Failed to compress the log file,
