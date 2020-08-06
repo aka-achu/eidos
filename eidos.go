@@ -29,7 +29,6 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 		Filename:       filename,
 		RotationOption: options,
 	}
-	options.postRotationOperation = l.postRotation
 	callbackExecutor = make(chan string)
 
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {

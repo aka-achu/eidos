@@ -45,10 +45,6 @@ type Options struct {
 	// value of Compress in false
 	Compress bool `json:"compress"`
 
-	// CleanUpCallback will hold an internal cleanup function definition which will
-	// clean old log file and some other post rotating operations
-	postRotationOperation func(string)
-
 	// LocalTime determines if the time used for formatting the timestamps in
 	// backup files is the computer's local time.  The default is to use UTC
 	// time.
