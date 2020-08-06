@@ -14,7 +14,7 @@ Eidos assumes that only one process is writing to the output files. Using the sa
 
 ##### Features
   - Filesize based log rotation
-  - Inverval based log rotation
+  - Interval based log rotation
   - Log file compression
   - Retention period for rotated log files
   - Support for user defined callback function
@@ -91,7 +91,7 @@ Rotate causes Logger to close the existing log file and immediately create a new
 Close implements io.Closer, and closes the current logfile.
 
 ### Callback.Execute
-Callback.Execute takes a user defined function of defination func(s string). After successful rotation of the log file/ compression of log file (if compresssion if enabled), the callback function will be called with the backupfile/compressed file path as an argument. This feature can be used for some post rotation jobs like uploading the backup file to s3, etc.
+Callback.Execute takes a user defined function of definition func(s string). After successful rotation of the log file/ compression of log file (if compression is enabled), the callback function will be called with the backup file/compressed file path as an argument. This feature can be used for some post rotation jobs like uploading the backup file to s3, etc.
 
 
 ### Examples
