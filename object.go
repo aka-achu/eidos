@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Logger is an ip.WriteCloser that writes to the specified filename
+// Logger is an io.WriteCloser that writes to the specified filename
 type Logger struct {
 	// Filename is the file to write logs to. Backup log files will be
 	// retained in the same directory. If Filename is not given, then
