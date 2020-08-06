@@ -42,10 +42,12 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 	// Initializing callbackExecutor channel
 	callbackExecutor = make(chan string)
 
-	// Creating directories for the log files
-	//todo check the requested path of directories exists of not
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
-		return nil, err
+	// Checking the requested directory structure exist or not.
+	// if not, creating directory structure for the log files
+	if _, err := os.Stat(filepath.Dir(filename)); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+			return nil, err
+		}
 	}
 
 	// Initializing a ticker of interval options.Period
