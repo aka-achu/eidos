@@ -4,17 +4,19 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 var (
-	// defaultMaxSize represents the default maximum size of the log file, which is 10 mb
+	// defaultMaxSize represents the default maximum size of the log file, which is 100 mb
 	defaultMaxSize = 100
 	// defaultMaxPeriod represents the maximum period of a log file to be active, which is 7 days
 	defaultMaxPeriod = 7 * 24 * time.Hour
-	megabyte = 1024 * 1024
+	megabyte         = 1024 * 1024
 	backupTimeFormat = "2006-01-02T15-04-05.000"
 )
 
@@ -23,19 +25,9 @@ func (l *Logger) max() int64 {
 	return int64(l.RotationOption.Size) * int64(megabyte)
 }
 
-// getFilename returns the file name/path configured in the *Logger object
-// if not filename is configured by the user then a default file name/path will be returned
-// default file name/path is a log file with "eidos" suffix in the temp directory
-func (l *Logger) getFilename() string {
-	if l.Filename != "" {
-		return l.Filename
-	}
-	return filepath.Join(os.TempDir(), filepath.Base(os.Args[0])+"-eidos.log")
-}
-
 // openExistingOrNewFile opens an existing log file or creates a new file.
 func (l *Logger) openExistingOrNewFile() error {
-	fileName := l.getFilename()
+	fileName := l.Filename
 	fileInfo, err := os.Stat(fileName)
 
 	// Checking for existence of the file
@@ -63,7 +55,7 @@ func (l *Logger) openExistingOrNewFile() error {
 
 // openNewFile opens a new file
 func (l *Logger) openNewFile() error {
-	fileName := l.getFilename()
+	fileName := l.Filename
 	fileMode := os.FileMode(0666)
 
 	// Getting the status of the requested file
@@ -158,7 +150,11 @@ func postRotation(backupFileName string, compress bool) {
 	// If compression is enabled
 	if compress {
 		// Get a compressed file name
-		compressedFileName := backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))] + ".log.gz"
+		compressedFileName := fmt.Sprintf(
+			"%s%s.gz",
+			backupFileName[0:len(backupFileName)-len(filepath.Ext(backupFileName))],
+			filepath.Ext(backupFileName),
+		)
 		// Compress the log file
 		if err := compressLogFile(backupFileName, compressedFileName); err != nil {
 			// Failed to compress the log file,
@@ -220,7 +216,7 @@ func compressLogFile(sourceFile, destinationFile string) error {
 		return err
 	}
 
-	if err :=file.Close(); err != nil {
+	if err := file.Close(); err != nil {
 		return err
 	}
 
@@ -230,4 +226,44 @@ func compressLogFile(sourceFile, destinationFile string) error {
 	}
 
 	return nil
+}
+
+func cleanUpOldLogs(file string, compress bool, period int) {
+	filename := filepath.Base(file)
+	// For both compressed and uncompressed files the prefix will be
+	// the base filename without extension
+	prefix := filename[0 : len(filename)-len(filepath.Ext(filename))]
+
+	// For uncompressed files the suffix will be the base file extension
+	suffix := filepath.Ext(file)
+
+	if compress {
+		// For compressed files the suffix will be the extension of the compressed file
+		suffix = filepath.Ext(file) + ".gz"
+	}
+
+	// get the list of all the files and folders in the log folder
+	files, err := ioutil.ReadDir(filepath.Dir(file))
+	if err != nil {
+		return
+	}
+
+	for _, f := range files {
+		// It the object is an directory, continue
+		if f.IsDir() {
+			continue
+		}
+
+		// a qualified rotated file will have the defined prefix and suffix
+		if strings.HasPrefix(f.Name(), prefix) && strings.HasSuffix(f.Name(), suffix) && f.Name() != filename {
+			// Parsing the time from the file name
+			timeStamp, _ := time.Parse(backupTimeFormat, f.Name()[len(prefix)+1:len(f.Name())-len(suffix)])
+
+			// Checking the age of the file, if the age is greater than the provided retention period,
+			// then remove the file
+			if time.Now().Sub(timeStamp.Add(-time.Second*19800)) > time.Duration(period)*time.Hour*24 {
+				_ = os.Remove(filepath.Join(filepath.Dir(file), f.Name()))
+			}
+		}
+	}
 }
