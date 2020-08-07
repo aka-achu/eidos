@@ -1,4 +1,4 @@
-package main
+package eidos
 
 import (
 	"compress/gzip"
