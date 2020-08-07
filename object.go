@@ -11,7 +11,7 @@ type Logger struct {
 	// Filename is the file to write logs to. Backup log files will be
 	// retained in the same directory. If Filename is not given, then
 	// the logs files will be written to eidos logs file and will be
-	// stored in the os.TempDir().
+	// stored in the os.TempDir() under a folder "eidos".
 	Filename string `json:"filename"`
 
 	// RotationOption specifies set of parameters for the rotating operation.
@@ -41,8 +41,8 @@ type Options struct {
 	// based on age.
 	RetentionPeriod int `json:"retention_period"`
 
-	// Compress determines if the rotated log files should be compressed. The default
-	// value of Compress in false
+	// Compress determines if the rotated log files should be compressed is "extension.gz" format.
+	// The default value of Compress in false
 	Compress bool `json:"compress"`
 
 	// LocalTime determines if the time used for formatting the timestamps in

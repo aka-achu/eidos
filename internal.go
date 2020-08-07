@@ -112,9 +112,6 @@ func backupName(name string, localTime bool) string {
 	)
 }
 
-func chown(_ string, _ os.FileInfo) error {
-	return nil
-}
 
 // rotate, rotates the currently opened log file
 func (l *Logger) rotate() error {
