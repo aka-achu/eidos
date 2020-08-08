@@ -45,6 +45,13 @@ type Options struct {
 	// The default value of Compress in false
 	Compress bool `json:"compress"`
 
+	// CompressionLevel basically indicates the compression ratio.
+	// Only three types of compression levels are supported
+	// NoCompression      = 0
+	// BestSpeed          = 1
+	// BestCompression    = 9
+	CompressionLevel int `json:"compression_level"`
+
 	// LocalTime determines if the time used for formatting the timestamps in
 	// backup files is the computer's local time.  The default is to use UTC
 	// time.

@@ -79,6 +79,7 @@ func (l *Logger) openNewFile() error {
 		go postRotation(
 			backupFileName,
 			l.RotationOption.Compress,
+			l.RotationOption.CompressionLevel,
 		)
 	}
 
@@ -143,7 +144,7 @@ func (l *Logger) close() error {
 
 // postRotation is used to trigger callback function,
 // compress the log files, if compression if enabled
-func postRotation(backupFileName string, compress bool) {
+func postRotation(backupFileName string, compress bool, compressionLevel int) {
 	// If compression is enabled
 	if compress {
 		// Get a compressed file name
@@ -153,7 +154,7 @@ func postRotation(backupFileName string, compress bool) {
 			filepath.Ext(backupFileName),
 		)
 		// Compress the log file
-		if err := compressLogFile(backupFileName, compressedFileName); err != nil {
+		if err := compressLogFile(backupFileName, compressedFileName, compressionLevel); err != nil {
 			// Failed to compress the log file,
 			// passing the uncompressed log file path in the callback trigger channel
 			callbackExecutor <- backupFileName
@@ -168,7 +169,7 @@ func postRotation(backupFileName string, compress bool) {
 }
 
 // compressLogFile compressed the requested log file
-func compressLogFile(sourceFile, destinationFile string) error {
+func compressLogFile(sourceFile, destinationFile string, compressionLevel int) error {
 	file, err := os.Open(sourceFile)
 	if err != nil {
 		return fmt.Errorf("failed to open log file: %v", err)
@@ -192,7 +193,7 @@ func compressLogFile(sourceFile, destinationFile string) error {
 	defer compressedFile.Close()
 
 	// Using BestCompression method to compress the log files
-	gzWriter, err := gzip.NewWriterLevel(compressedFile, gzip.BestCompression)
+	gzWriter, err := gzip.NewWriterLevel(compressedFile, compressionLevel)
 	if err != nil {
 		return err
 	}
@@ -206,10 +207,12 @@ func compressLogFile(sourceFile, destinationFile string) error {
 	}()
 
 	if _, err := io.Copy(gzWriter, file); err != nil {
+		fmt.Println("Failed to compress the file", err)
 		return err
 	}
 
 	if err := gzWriter.Close(); err != nil {
+		fmt.Println("Failed to close the compress writer", err)
 		return err
 	}
 

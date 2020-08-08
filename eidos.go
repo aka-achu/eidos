@@ -40,6 +40,14 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 		filename = filepath.Join(os.TempDir(), "eidos_logs", filepath.Base(os.Args[0])+"-eidos.log")
 	}
 
+	// Checking for a valid compression level
+	switch options.CompressionLevel {
+	case 0,1,9:
+		break
+	default:
+		options.CompressionLevel = 1
+	}
+
 	// Initializing a Logger object
 	l := &Logger{
 		Filename:       filename,
