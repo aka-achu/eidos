@@ -16,6 +16,7 @@ Eidos assumes that only one process is writing to the output files. Using the sa
   - Filesize based log rotation
   - Interval based log rotation
   - Log file compression
+  - Support for multiple compression levels
   - Retention period for rotated log files
   - Support for user defined callback function
   - Thread safe
@@ -23,22 +24,26 @@ Eidos assumes that only one process is writing to the output files. Using the sa
 ### Objects
 
 ```go
+// Logger is an io.WriteCloser that writes to the specified filename
 type Logger struct {
 	// Filename is the file to write logs to. Backup log files will be
 	// retained in the same directory. If Filename is not given, then
 	// the logs files will be written to eidos logs file and will be
-	// stored in the os.TempDir().
+	// stored in the os.TempDir() under a folder "eidos".
 	Filename string `json:"filename"`
 
 	// RotationOption specifies set of parameters for the rotating operation.
 	RotationOption *Options `json:"rotation_option"`
 
-	size  int64
-	file  *os.File
-	ticker *time.Ticker
-	tick chan bool
-	mutex sync.Mutex
+	size            int64
+	file            *os.File
+	rotationTicker  *time.Ticker
+	retentionTicker *time.Ticker
+	mutex           sync.Mutex
 }
+```
+
+```go
 
 type Options struct {
 
@@ -57,15 +62,25 @@ type Options struct {
 	// based on age.
 	RetentionPeriod int `json:"retention_period"`
 
-	// Compress determines if the rotated log files should be compressed. The default
-	// value of Compress in false
+	// Compress determines if the rotated log files should be compressed is "extension.gz" format.
+	// The default value of Compress in false
 	Compress bool `json:"compress"`
+
+	// CompressionLevel basically indicates the compression ratio.
+	// Only three types of compression levels are supported
+	// NoCompression      = 0
+	// BestSpeed          = 1
+	// BestCompression    = 9
+	CompressionLevel int `json:"compression_level"`
 
 	// LocalTime determines if the time used for formatting the timestamps in
 	// backup files is the computer's local time.  The default is to use UTC
 	// time.
 	LocalTime bool `json:"localtime" yaml:"localtime"`
 }
+```
+
+```go
 
 type Callback struct {
 	// Execute will hold a func(string) definition which will be called when the
@@ -75,63 +90,100 @@ type Callback struct {
 	Execute func(string)
 }
 ```
+
 ```Logger``` is an io.WriteCloser that writes to the specified filename.
 
-```Logger``` opens or creates the logfile on first Write. If the file exists and is less than ```Options.Size``` megabytes, eidos will open and append to that file. If the file exists and its size is >= ```Options.Size``` megabytes, the file is renamed by putting the current time in a timestamp in the name immediately before the file's extension. A new log file is then created using original filename.
+```Logger``` opens or creates the logfile on first Write. If the file exists and is less than ```Options.Size``` megabytes, eidos will open and append to that file. If the file exists and its size is >= ```Options.Size``` megabytes, the file is renamed by putting the current timestamp. A new log file is being created using original filename.
 
-Whenever a write would cause the current log file exceed MaxSize megabytes, the current file is closed, renamed, and a new log file created with the original name. Thus, the filename you give Logger is always the "current" log file. If ```compression``` is enabled in the ```Logger.RotationOption``` then, the rotated log files will be compressed using  ```gzip.BestCompression```.
+Whenever a write would cause the current log file exceed ```Options.Size``` megabytes, the current file is closed, renamed, and a new log file is being created with the original name. Thus, the filename you give Logger is always the "current" log file. If ```compression``` is enabled in the ```Logger.RotationOption``` then, the rotated log files will be compressed using gzip compression. The user can select the level of compression. Currently, only three compression levels are supported. 1. NoCompression 2. BestCompression 3. BestSpeed. 
 
 ### func (l *Logger) Write(p []byte) (n int, err error)
-Close implements io.Write, and writes to the current logfile.
+```Write``` implements ```io.Write```, and writes to the current logfile.
 
 ### func (l *Logger) Rotate() error
-Rotate causes Logger to close the existing log file and immediately create a new one. This is a helper function for applications that want to initiate rotations outside of the normal rotation rules
+```Rotate``` causes Logger to close the existing log file and immediately create a new one. This is a helper function for applications that want to initiate rotations outside of the normal rotation rules.
 
 ### func (l *Logger) Close() error
-Close implements io.Closer, and closes the current logfile.
+```Close``` implements ```io.Closer```, and closes the current logfile.
 
-### Callback.Execute
-Callback.Execute takes a user defined function of definition func(s string). After successful rotation of the log file/ compression of log file (if compression is enabled), the callback function will be called with the backup file/compressed file path as an argument. This feature can be used for some post rotation jobs like uploading the backup file to s3, etc.
+### func New(filename string, options *Options, callback *Callback) (*Logger, error)
+```New``` validates the``` eidos.options```, triggers the daemon threads and initialized the ```Logger``` object
 
+### Daemon Threads
+There are three daemon threads in edios.
+ - Period based rotation using ticker (```Logger.rotationTicker```)
+     ```go
+        go func() {
+            for {
+                select {
+                case _ = <-l.rotationTicker.C:
+                    l.Rotate()
+                }
+            }
+        }()
+    ```
+ - Execution of custom callback function which is trigger by a channel (```callbackExecutor```)
+    ```go
+       go func() {
+            for {
+               callback.Execute(<-callbackExecutor)
+            }
+       }()
+    ```
+ - Cleaning of old log files whose retention periods has exceeded
+    ```go
+       go func() {
+            for {
+                select {
+                case _ = <-l.retentionTicker.C:
+                    cleanUpOldLogs(filename, options.Compress, options.RetentionPeriod)
+                }
+            }
+       }()
+
+    ```
 
 ### Examples
 #### Using along with standard library's log package
 ```go
-l, _ := New("/var/log/app.foobar.log",
-		&Options{
-			Size:      1,
-			Period:    24 * time.Hour,
-			Compress:  true,
-			LocalTime: true,
-		}, &Callback{
+	logger, err := eidos.New("/var/log/myapp/sample.log",
+		&eidos.Options{
+			Size:             1000,
+			Compress:         true,
+			CompressionLevel: 9,
+			LocalTime:        true,
+			RetentionPeriod:  30,
+			Period:           24 *time.Hour,
+		}, &eidos.Callback{
 			Execute: func(s string) {
-				fmt.Printf("Rotated file name-%s", s)
+				fmt.Println("Rotated file", s)
 			},
 		})
-log.SetOutput(l)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(logger)
 ```
 
 #### Using along with uber-go/zap
 ```go
-l, _ := New("/var/log/app.foobar.log",
-		&Options{
-			Size:      1,
-			Period:    24 * time.Hour,
-			Compress:  true,
-			LocalTime: true,
-		}, &Callback{
+	logger, err := eidos.New("/var/log/myapp/sample.log",
+		&eidos.Options{
+			Size:             1000,
+			Compress:         true,
+			CompressionLevel: 9,
+			LocalTime:        true,
+			RetentionPeriod:  30,
+			Period:           24 * time.Hour,
+		}, &eidos.Callback{
 			Execute: func(s string) {
-				fmt.Printf("Rotated file name-%s", s)
+				fmt.Println("Rotated file", s)
 			},
 		})
-		
-appLogger = zap.New(
-    zapcore.NewCore(
-        zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
-        zapcore.AddSync(l),
-        zapcore.InfoLevel,
-        zap.AddCaller(),
-    ).Sugar()
+	if err != nil {
+		panic(err)
+	}
+	zapcore.AddSync(logger)
 ```
 
 
