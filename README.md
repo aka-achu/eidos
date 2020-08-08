@@ -110,7 +110,7 @@ Whenever a write would cause the current log file exceed ```Options.Size``` mega
 ```New``` validates the``` eidos.options```, triggers the daemon threads and initialized the ```Logger``` object
 
 ### Daemon Threads
-There are three daemon threads in edios.
+There are three daemon threads in eidos.
  - Period based rotation using ticker (```Logger.rotationTicker```)
      ```go
         go func() {
