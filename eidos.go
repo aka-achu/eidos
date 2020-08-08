@@ -89,10 +89,22 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 		}
 	}()
 
+	// Validating the retention period parameter.
+	// If the value of RetentionPeriod is 0 then the logs files will
+	// be retained for ever.
 	if l.RotationOption.RetentionPeriod > 0 {
 		l.retentionTicker = time.NewTicker(time.Duration(l.RotationOption.RetentionPeriod) * 24 * time.Hour)
+		// Calling the cleanUpOldLogs for cleaning up existing old files.
+		go cleanUpOldLogs(filename, options.Compress, options.RetentionPeriod)
+		// Running daemon go-routine for execution of cleanUpLogs, which
+		// will be triggered by the retentionTicker
 		go func() {
-			cleanUpOldLogs(filename, options.Compress, options.RetentionPeriod)
+			for {
+				select {
+				case _ = <-l.retentionTicker.C:
+					cleanUpOldLogs(filename, options.Compress, options.RetentionPeriod)
+				}
+			}
 		}()
 	}
 
