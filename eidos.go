@@ -42,7 +42,7 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 
 	// Checking for a valid compression level
 	switch options.CompressionLevel {
-	case 0,1,9:
+	case 0, 1, 9:
 		break
 	default:
 		options.CompressionLevel = 1
