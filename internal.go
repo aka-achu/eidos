@@ -18,7 +18,7 @@ var (
 	defaultMaxPeriod = 7 * 24 * time.Hour
 	megabyte         = 1024 * 1024
 	backupTimeFormat = "2006-01-02T15-04-05.000"
-	currentTime = time.Now
+	currentTime      = time.Now
 )
 
 // max return the maximum filesize
