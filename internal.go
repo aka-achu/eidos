@@ -18,6 +18,7 @@ var (
 	defaultMaxPeriod = 7 * 24 * time.Hour
 	megabyte         = 1024 * 1024
 	backupTimeFormat = "2006-01-02T15-04-05.000"
+	currentTime = time.Now
 )
 
 // max return the maximum filesize
@@ -102,7 +103,7 @@ func backupName(name string, localTime bool) string {
 	ext := filepath.Ext(filename)
 	// if the localTime is true then use the system time to generate backup file name
 	//if the localTime is false then use UTC time to generate backup file name
-	t := time.Now()
+	t := currentTime()
 	if !localTime {
 		t = t.UTC()
 	}
@@ -261,7 +262,7 @@ func cleanUpOldLogs(file string, compress bool, period int) {
 
 			// Checking the age of the file, if the age is greater than the provided retention period,
 			// then remove the file
-			if time.Now().Sub(timeStamp.Add(-time.Second*19800)) > time.Duration(period)*time.Hour*24 {
+			if currentTime().Sub(timeStamp.Add(-time.Second*19800)) > time.Duration(period)*time.Hour*24 {
 				_ = os.Remove(filepath.Join(filepath.Dir(file), f.Name()))
 			}
 		}
