@@ -111,7 +111,7 @@ func TestNew(t *testing.T) {
 
 	equals(
 		logger.RotationOption.CompressionLevel,
-		1,
+		0,
 		t,
 		"Failed to validate the *Logger.RotationOption.CompressionLevel value",
 	)
