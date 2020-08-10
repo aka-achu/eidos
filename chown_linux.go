@@ -12,7 +12,6 @@ func chown(file string, info os.FileInfo) error {
 		return err
 	}
 	f.Close()
-	file_sys := info.Sys()
-	_ = os.Chown(file, int(file_sys.(*syscall.Stat_t).Uid), int(file_sys.(*syscall.Stat_t).Gid))
-	return nil
+	fileSys := info.Sys()
+	return os.Chown(file, int(fileSys.(*syscall.Stat_t).Uid), int(fileSys.(*syscall.Stat_t).Gid))
 }
