@@ -12,6 +12,3 @@ go:
 
 script:
   - go test -coverprofile="coverage.txt"
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
