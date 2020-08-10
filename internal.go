@@ -114,7 +114,6 @@ func backupName(name string, localTime bool) string {
 	)
 }
 
-
 // rotate, rotates the currently opened log file
 func (l *Logger) rotate() error {
 	// Close the current log file
