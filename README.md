@@ -19,7 +19,6 @@ Eidos assumes that only one process is writing to the output files. Using the sa
   - Support for multiple compression levels
   - Retention period for rotated log files
   - Support for user defined callback function
-  - Thread safe
 
 ### Objects
 
