@@ -45,7 +45,7 @@ func New(filename string, options *Options, callback *Callback) (*Logger, error)
 	case 0, 1, 9:
 		break
 	default:
-		options.CompressionLevel = 1
+		options.CompressionLevel = 0
 	}
 
 	// Initializing a Logger object
