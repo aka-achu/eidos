@@ -357,6 +357,8 @@ func TestLogger_Rotate_Auto_Size_Compress(t *testing.T) {
 		log.Println(body)
 	}
 
+	//todo check the existence logic of files
+
 	// Checking for the existence of the rotated log file
 	_, err := os.Stat(<-rotateCh)
 	equals(
@@ -503,7 +505,7 @@ func TestLogger_Retention_Compressed(t *testing.T) {
 		filepath.Base(
 			dayOldFile,
 		),
-		))
+	))
 	equals(
 		os.IsNotExist(err),
 		false,
@@ -648,4 +650,45 @@ func TestLogger_Retention_UnCompressed(t *testing.T) {
 		t,
 		"Error. Month old compressed file should not be present in the log folder",
 	)
+}
+
+func TestLogger_Rotate_Auto_Period_Compress(t *testing.T) {
+
+	var rotateCh = make(chan string, 10)
+
+	go func() {
+		for file := range rotateCh {
+			_, err := os.Stat(file)
+			equals(
+				os.IsNotExist(err),
+				false,
+				t,
+				"Error. The rotated compressed log file should be present",
+			)
+		}
+	}()
+	logger, _ := New("", &Options{
+		Compress:         true,
+		CompressionLevel: 9,
+		Period:           time.Second * 2,
+	}, &Callback{
+		Execute: func(s string) {
+			rotateCh <- s
+		},
+	})
+
+	defer func() {
+		// Closing the logger to clean up the log directory
+		_ = logger.close()
+		// Cleaning up the log directory
+		_ = clean(filepath.Dir(logger.Filename))
+	}()
+
+	log.SetOutput(logger)
+	log.Println(randStringBytes(1024))
+	time.Sleep(time.Second * 3)
+	logger.rotationTicker.Stop()
+	close(rotateCh)
+	time.Sleep(time.Second * 1)
+
 }
