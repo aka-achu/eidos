@@ -1,7 +1,6 @@
 branches:
   only:
-    - master
-    - v1
+    - main
 os:
   - linux
   - osx
