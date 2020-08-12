@@ -1,4 +1,4 @@
-# Eidos [![Build Status](https://travis-ci.org/aka-achu/eidos.svg?branch=master)](https://travis-ci.org/aka-achu/eidos)
+# Eidos [![Build Status](https://travis-ci.org/aka-achu/eidos.svg?branch=main)](https://travis-ci.org/aka-achu/eidos)  [![Coverage Status](https://coveralls.io/repos/github/aka-achu/eidos/badge.svg?branch=main)](https://coveralls.io/github/aka-achu/eidos?branch=main)
 
 ### Eidos is log rotation package for golang
 
